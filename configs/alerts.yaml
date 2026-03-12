@@ -1,0 +1,30 @@
+rules:
+  - name: high-error-rate
+    query: "rate(http_errors_total{}, 5m) > 10"
+    condition: "> 10"
+    severity: critical
+    message: "HTTP error rate exceeds 10 errors/sec"
+
+  - name: high-cpu
+    query: "avg(cpu_usage_percent{}, 5m) > 85"
+    condition: "> 85"
+    severity: warning
+    message: "CPU usage above 85%"
+
+  - name: high-memory
+    query: "avg(memory_usage_percent{}, 5m) > 90"
+    condition: "> 90"
+    severity: critical
+    message: "Memory usage above 90%"
+
+  - name: high-latency
+    query: "p99(http_request_duration_ms{}, 5m) > 2000"
+    condition: "> 2000"
+    severity: warning
+    message: "P99 latency exceeds 2 seconds"
+
+  - name: low-request-rate
+    query: "rate(http_requests_total{}, 5m) < 1"
+    condition: "< 1"
+    severity: info
+    message: "Request rate is unusually low (possible outage)"

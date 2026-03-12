@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: observability
+      POSTGRES_USER: obsuser
+      POSTGRES_PASSWORD: obspass
+    ports:
+      - "5434:5432"
+    volumes:
+      - obs_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U obsuser -d observability"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+    environment:
+      OBS_SERVER_PORT: "9090"
+      OBS_DATABASE_URL: "postgres://obsuser:obspass@postgres:5432/observability?sslmode=disable"
+      OBS_ALERT_RULES: "configs/alerts.yaml"
+      OBS_LOG_LEVEL: "info"
+    volumes:
+      - ../configs:/app/configs:ro
+
+volumes:
+  obs_postgres:
