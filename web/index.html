@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observability Platform</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; }
+    header { background: #1e293b; padding: 1rem 2rem; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.25rem; font-weight: 600; color: #2dd4bf; }
+    .status { font-size: 0.8rem; color: #64748b; }
+    .status.ok { color: #34d399; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: #1e293b; border-radius: 10px; padding: 1.25rem; border: 1px solid #334155; }
+    .stat-card .label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; margin-top: 0.25rem; }
+    .teal { color: #2dd4bf; } .green { color: #34d399; } .yellow { color: #fbbf24; }
+    .red { color: #f87171; } .blue { color: #60a5fa; } .purple { color: #c084fc; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .section { background: #1e293b; border-radius: 10px; padding: 1.5rem; border: 1px solid #334155; margin-bottom: 1.5rem; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .section h2 { font-size: 1rem; font-weight: 600; color: #cbd5e1; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.5rem 0.75rem; color: #64748b; font-weight: 500; border-bottom: 1px solid #334155; }
+    td { padding: 0.625rem 0.75rem; border-bottom: 1px solid #1a2540; }
+    tr:hover td { background: #263447; }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-critical { background: #3f1515; color: #f87171; }
+    .badge-warning { background: #78350f; color: #fbbf24; }
+    .badge-info { background: #1c3a5f; color: #60a5fa; }
+    .badge-firing { background: #3f1515; color: #f87171; }
+    .badge-resolved { background: #064e3b; color: #34d399; }
+    .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    input, select { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.875rem; flex: 1; min-width: 150px; }
+    .btn { padding: 0.5rem 1.25rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.875rem; font-weight: 500; }
+    .btn-teal { background: #0d9488; color: white; }
+    .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.75rem; }
+    .chart-area { width: 100%; height: 160px; background: #0f172a; border-radius: 6px; overflow: hidden; position: relative; }
+    .chart-area svg { width: 100%; height: 100%; }
+    .metric-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .metric-pill { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 0.3rem 0.75rem; font-size: 0.8rem; cursor: pointer; }
+    .metric-pill:hover, .metric-pill.active { border-color: #2dd4bf; color: #2dd4bf; }
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 0.75rem 1.25rem; font-size: 0.875rem; display: none; z-index: 999; }
+    .log-line { padding: 0.3rem 0.5rem; border-bottom: 1px solid #1a2540; font-family: monospace; font-size: 0.8rem; }
+    .log-debug { color: #94a3b8; } .log-info { color: #e2e8f0; } .log-warn { color: #fbbf24; }
+    .log-error { color: #f87171; } .log-fatal { color: #c084fc; }
+    @media(max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Observability Platform</h1>
+  <div>
+    <span class="status" id="conn-status">● connecting</span>
+    <button class="btn btn-teal btn-sm" onclick="refresh()" style="margin-left:1rem">Refresh</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label">Services</div><div class="value teal" id="stat-services">0</div></div>
+    <div class="stat-card"><div class="label">Active Alerts</div><div class="value red" id="stat-alerts">0</div></div>
+    <div class="stat-card"><div class="label">Events/sec</div><div class="value blue" id="stat-eps">0</div></div>
+    <div class="stat-card"><div class="label">Total Metrics</div><div class="value purple" id="stat-metrics">0</div></div>
+    <div class="stat-card"><div class="label">Log Entries</div><div class="value green" id="stat-logs">0</div></div>
+    <div class="stat-card"><div class="label">Traces</div><div class="value yellow" id="stat-traces">0</div></div>
+  </div>
+
+  <!-- Alerts + Metric Chart -->
+  <div class="grid2">
+    <div class="section">
+      <div class="section-header"><h2>🔴 Firing Alerts</h2><span id="alert-count" class="badge badge-critical" style="display:none"></span></div>
+      <table id="alerts-table">
+        <thead><tr><th>Rule</th><th>Severity</th><th>Value</th><th>Since</th></tr></thead>
+        <tbody id="alerts-body"><tr><td colspan="4" style="color:#64748b;text-align:center">No active alerts</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>📈 Metrics</h2></div>
+      <div class="metric-list" id="metric-names" style="margin-bottom:0.75rem"></div>
+      <div class="chart-area"><svg id="chart-svg" viewBox="0 0 400 160" preserveAspectRatio="none"><polyline id="chart-line" points="" fill="none" stroke="#2dd4bf" stroke-width="2"/></svg></div>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="section">
+    <div class="section-header"><h2>📋 Logs</h2></div>
+    <div class="form-row">
+      <input id="log-service" placeholder="Service filter" />
+      <select id="log-level">
+        <option value="">All levels</option>
+        <option value="debug">debug</option>
+        <option value="info">info</option>
+        <option value="warn">warn</option>
+        <option value="error">error</option>
+        <option value="fatal">fatal</option>
+      </select>
+      <input id="log-search" placeholder="Search message..." />
+      <button class="btn btn-teal" onclick="queryLogs()">Search</button>
+    </div>
+    <div id="log-container" style="max-height:300px;overflow-y:auto;background:#0f172a;border-radius:6px;font-size:0.8rem;"></div>
+  </div>
+
+  <!-- Alert History -->
+  <div class="section">
+    <h2 style="margin-bottom:1rem">🕐 Alert History</h2>
+    <table>
+      <thead><tr><th>Rule</th><th>Severity</th><th>State</th><th>Fired</th><th>Resolved</th></tr></thead>
+      <tbody id="history-body"><tr><td colspan="5" style="color:#64748b;text-align:center">No history</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/v1';
+let chartPoints = [];
+let selectedMetric = null;
+
+function toast(msg, color) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.color = color || '#e2e8f0';
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString();
+}
+
+function severityBadge(s) {
+  return `<span class="badge badge-${s}">${s}</span>`;
+}
+
+function stateBadge(s) {
+  return `<span class="badge badge-${s}">${s}</span>`;
+}
+
+async function fetchJSON(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error(r.statusText);
+  return r.json();
+}
+
+async function refresh() {
+  try {
+    const ov = await fetchJSON('/overview');
+    document.getElementById('stat-services').textContent = ov.total_services;
+    document.getElementById('stat-alerts').textContent = ov.active_alerts;
+    document.getElementById('stat-eps').textContent = ov.events_per_sec.toFixed(1);
+    document.getElementById('stat-metrics').textContent = ov.total_metrics;
+    document.getElementById('stat-logs').textContent = ov.total_logs;
+    document.getElementById('stat-traces').textContent = ov.total_traces;
+  } catch(e) {}
+
+  await refreshAlerts();
+  await refreshMetricNames();
+  await refreshHistory();
+  document.getElementById('conn-status').textContent = '● live';
+  document.getElementById('conn-status').className = 'status ok';
+}
+
+async function refreshAlerts() {
+  try {
+    const data = await fetchJSON('/alerts');
+    const tbody = document.getElementById('alerts-body');
+    const badge = document.getElementById('alert-count');
+    if (!data.alerts || data.alerts.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:#64748b;text-align:center">No active alerts</td></tr>';
+      badge.style.display = 'none';
+      return;
+    }
+    badge.textContent = data.count;
+    badge.style.display = 'inline-block';
+    tbody.innerHTML = data.alerts.map(a => `
+      <tr>
+        <td style="font-weight:500">${a.rule_name}</td>
+        <td>${severityBadge(a.severity)}</td>
+        <td style="font-family:monospace">${a.value.toFixed(2)}</td>
+        <td>${fmtTime(a.fired_at)}</td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+async function refreshMetricNames() {
+  try {
+    const data = await fetchJSON('/metrics/names');
+    const container = document.getElementById('metric-names');
+    if (!data.names || data.names.length === 0) {
+      container.innerHTML = '<span style="color:#64748b;font-size:0.8rem">No metrics yet</span>';
+      return;
+    }
+    container.innerHTML = data.names.map(n =>
+      `<span class="metric-pill ${n === selectedMetric ? 'active' : ''}" onclick="selectMetric('${n}')">${n}</span>`
+    ).join('');
+    if (!selectedMetric && data.names.length > 0) {
+      selectMetric(data.names[0]);
+    }
+  } catch(e) {}
+}
+
+async function selectMetric(name) {
+  selectedMetric = name;
+  document.querySelectorAll('.metric-pill').forEach(p => {
+    p.classList.toggle('active', p.textContent === name);
+  });
+  try {
+    const to = new Date().toISOString();
+    const from = new Date(Date.now() - 60*60*1000).toISOString();
+    const data = await fetchJSON(`/metrics/query?name=${encodeURIComponent(name)}&from=${from}&to=${to}`);
+    if (data.series && data.series.length > 0) {
+      const points = data.series[0].points || [];
+      drawChart(points);
+    }
+  } catch(e) {}
+}
+
+function drawChart(points) {
+  if (!points || points.length === 0) return;
+  const svg = document.getElementById('chart-svg');
+  const line = document.getElementById('chart-line');
+  const W = 400, H = 160, PAD = 10;
+
+  const vals = points.map(p => p.value);
+  const times = points.map(p => new Date(p.timestamp).getTime());
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const minT = Math.min(...times), maxT = Math.max(...times);
+  const rangeV = maxV - minV || 1;
+  const rangeT = maxT - minT || 1;
+
+  const pts = points.map((p, i) => {
+    const x = PAD + ((times[i] - minT) / rangeT) * (W - 2*PAD);
+    const y = H - PAD - ((vals[i] - minV) / rangeV) * (H - 2*PAD);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  line.setAttribute('points', pts);
+}
+
+async function refreshHistory() {
+  try {
+    const data = await fetchJSON('/alerts/history?limit=20');
+    const tbody = document.getElementById('history-body');
+    if (!data.history || data.history.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:#64748b;text-align:center">No history</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.history.map(h => `
+      <tr>
+        <td>${h.rule_name}</td>
+        <td>${severityBadge(h.severity)}</td>
+        <td>${stateBadge(h.state)}</td>
+        <td>${fmtTime(h.fired_at)}</td>
+        <td>${fmtTime(h.resolved_at)}</td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+async function queryLogs() {
+  const service = document.getElementById('log-service').value;
+  const level = document.getElementById('log-level').value;
+  const q = document.getElementById('log-search').value;
+
+  let url = '/logs?limit=100';
+  if (service) url += `&service=${encodeURIComponent(service)}`;
+  if (level) url += `&level=${encodeURIComponent(level)}`;
+  if (q) url += `&q=${encodeURIComponent(q)}`;
+
+  try {
+    const data = await fetchJSON(url);
+    const container = document.getElementById('log-container');
+    if (!data.logs || data.logs.length === 0) {
+      container.innerHTML = '<div style="color:#64748b;padding:0.5rem">No logs found</div>';
+      return;
+    }
+    container.innerHTML = data.logs.map(l =>
+      `<div class="log-line log-${l.level}"><span style="color:#64748b">${fmtTime(l.timestamp)}</span> <span style="font-weight:600">${l.service}</span> [${l.level.toUpperCase()}] ${l.message}</div>`
+    ).join('');
+  } catch(e) {
+    toast('Failed to fetch logs', '#f87171');
+  }
+}
+
+// Auto-refresh every 10 seconds
+setInterval(refresh, 10000);
+refresh();
+</script>
+</body>
+</html>
