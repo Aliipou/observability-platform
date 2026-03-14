@@ -266,6 +266,7 @@ func (ts *TimeSeriesStore) Cleanup() {
 		}
 		if !hasValid {
 			delete(ts.seriesDB, key)
+			delete(ts.names, s.Name)
 		}
 	}
 }
