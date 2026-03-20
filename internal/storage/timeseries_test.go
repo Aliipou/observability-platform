@@ -80,7 +80,7 @@ func TestQuery_EmptyResult(t *testing.T) {
 	ts := makeStore()
 	now := time.Now()
 	result := ts.Query("nonexistent", nil, now.Add(-time.Hour), now)
-	if result != nil && len(result) != 0 {
+	if len(result) != 0 {
 		t.Errorf("expected empty result, got %v", result)
 	}
 }
