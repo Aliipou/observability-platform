@@ -1,4 +1,16 @@
 bin/
 *.out
 .env
+.env.local
 vendor/
+*.db
+*.db-shm
+*.db-wal
+CLAUDE.md
+ANTI_GARBAGE_CHECKLIST.md
+# Go build artifacts
+*.exe
+*.test
+coverage.out
+coverage.html
+/dist/
