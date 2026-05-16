@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strconv"
 )
@@ -17,16 +18,24 @@ type Config struct {
 }
 
 // Load reads configuration from environment variables with sensible defaults.
+// OBS_DATABASE_URL is required and has no default; the process will exit if it
+// is not set, so credentials are never baked into the binary.
 func Load() *Config {
-	return &Config{
+	cfg := &Config{
 		ServerPort:    getEnvInt("OBS_SERVER_PORT", 9090),
-		DatabaseURL:   getEnv("OBS_DATABASE_URL", "postgres://obsuser:obspass@localhost:5432/observability?sslmode=disable"),
+		DatabaseURL:   getEnv("OBS_DATABASE_URL", ""),
 		AlertRulesDir: getEnv("OBS_ALERT_RULES", "configs/alerts.yaml"),
 		WebDir:        getEnv("OBS_WEB_DIR", "web"),
 		AgentInterval: getEnvInt("OBS_AGENT_INTERVAL", 15),
 		ServerURL:     getEnv("OBS_SERVER_URL", "http://localhost:9090"),
 		LogLevel:      getEnv("OBS_LOG_LEVEL", "info"),
 	}
+
+	if cfg.DatabaseURL == "" {
+		log.Fatal("OBS_DATABASE_URL must be set")
+	}
+
+	return cfg
 }
 
 func getEnv(key, defaultVal string) string {
