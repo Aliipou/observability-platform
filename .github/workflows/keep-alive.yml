@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Ping health endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://observability-backend.onrender.com/health)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://observability-backend-w2p4.onrender.com/health)
           echo "Health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "Warning: service returned $STATUS"
