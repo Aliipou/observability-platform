@@ -13,6 +13,10 @@
 
 ## Why This Exists
 
+
+## Live Demo
+**Frontend:** [https://observability-platform-demo.vercel.app](https://observability-platform-demo.vercel.app)
+
 Running microservices without observability is flying blind. Most teams bolt on monitoring as an afterthought and end up with disconnected dashboards, alert fatigue, and slow incident response. This platform was designed from the start to give you a coherent view across all services.
 
 ## What It Provides
