@@ -2,6 +2,8 @@
 
 <img src="https://capsule-render.vercel.app/api?type=waving&amp;color=gradient&amp;customColorList=6,14,20&amp;height=180&amp;section=header&amp;text=Observability%20Platform&amp;fontSize=40&amp;fontColor=fff&amp;animation=twinkling&amp;fontAlignY=38" />
 
+### [▶ Live Demo](https://observability-platform-demo.vercel.app)
+
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&amp;logo=go&amp;logoColor=white)](https://golang.org)
 [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-1.x-000000?style=flat&amp;logo=opentelemetry)](https://opentelemetry.io)
 [![Prometheus](https://img.shields.io/badge/Prometheus-2.x-E6522C?style=flat&amp;logo=prometheus)](https://prometheus.io)
